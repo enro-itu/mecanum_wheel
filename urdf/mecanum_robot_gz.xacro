@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mecanum_robot">
+
+  <!-- ====== PARAMETRELER ====== -->
+  <xacro:property name="body_length" value="1.0"/>
+  <xacro:property name="body_width"  value="0.7"/>
+  <xacro:property name="body_height" value="0.3"/>
+
+  <xacro:property name="wheel_radius" value="0.1625"/>
+  <xacro:property name="wheel_width"  value="0.09"/>
+  <xacro:property name="wheel_scale"  value="0.01"/>
+
+  <xacro:property name="wheel_offset_x" value="${body_length/2 - 0.10}"/>
+  <xacro:property name="wheel_offset_y" value="${body_width/2 + wheel_width/2}"/>
+
+  <xacro:property name="body_mass"  value="20.0"/>
+  <xacro:property name="wheel_mass" value="1.0"/>
+
+  <xacro:property name="body_z" value="${wheel_radius + body_height/2}"/>
+
+  <!-- GAZEBO İÇİN DOĞRU MESH PATH -->
+  <xacro:property name="wheel_mesh_left"
+                  value="package://mecanum_robot/meshes/mecanum_wheel_left.stl"/>
+  <xacro:property name="wheel_mesh_right"
+                  value="package://mecanum_robot/meshes/mecanum_wheel_right.stl"/>
+
+  <!-- ====== GÖVDE ====== -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 ${body_z}" rpy="0 0 0"/>
+      <mass value="${body_mass}"/>
+      <inertia
+        ixx="${1.0/12.0*body_mass*(body_height*body_height + body_width*body_width)}"
+        iyy="${1.0/12.0*body_mass*(body_height*body_height + body_length*body_length)}"
+        izz="${1.0/12.0*body_mass*(body_length*body_length + body_width*body_width)}"
+        ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+
+    <visual>
+      <origin xyz="0 0 ${body_z}" rpy="0 0 0"/>
+      <geometry><box size="${body_length} ${body_width} ${body_height}"/></geometry>
+      <material name="blue"><color rgba="0 0 1 1"/></material>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 ${body_z}" rpy="0 0 0"/>
+      <geometry><box size="${body_length} ${body_width} ${body_height}"/></geometry>
+    </collision>
+  </link>
+
+  <!-- ====== TEKER MACROSU ====== -->
+  <xacro:macro name="mecanum_wheel" params="name parent x y z mesh">
+    <link name="${name}">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="${mesh}" scale="${wheel_scale} ${wheel_scale} ${wheel_scale}"/>
+        </geometry>
+        <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
+      </visual>
+
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="${mesh}" scale="${wheel_scale} ${wheel_scale} ${wheel_scale}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${name}_joint" type="continuous">
+      <parent link="${parent}"/>
+      <child link="${name}"/>
+      <origin xyz="${x} ${y} ${z}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- ====== TEKERLER ====== -->
+  <xacro:mecanum_wheel name="wheel_fl" parent="base_link"
+    x="${wheel_offset_x}" y="${wheel_offset_y}" z="${wheel_radius}"
+    mesh="${wheel_mesh_left}"/>
+
+  <xacro:mecanum_wheel name="wheel_fr" parent="base_link"
+    x="${wheel_offset_x}" y="-${wheel_offset_y}" z="${wheel_radius}"
+    mesh="${wheel_mesh_right}"/>
+
+  <xacro:mecanum_wheel name="wheel_rl" parent="base_link"
+    x="-${wheel_offset_x}" y="${wheel_offset_y}" z="${wheel_radius}"
+    mesh="${wheel_mesh_left}"/>
+
+  <xacro:mecanum_wheel name="wheel_rr" parent="base_link"
+    x="-${wheel_offset_x}" y="-${wheel_offset_y}" z="${wheel_radius}"
+    mesh="${wheel_mesh_right}"/>
+
+</robot>

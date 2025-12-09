@@ -1,0 +1,149 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mecanum_robot">
+
+  <!-- ====== PARAMETRELER ====== -->
+  <!-- Gövde boyutları (m) -->
+  <xacro:property name="body_length" value="1.0"/>   <!-- x: 100 cm -->
+  <xacro:property name="body_width"  value="0.7"/>   <!-- y: 70 cm  -->
+  <xacro:property name="body_height" value="0.3"/>   <!-- z: 30 cm -->
+
+  <!-- Tekerlek boyutları (m) -->
+  <xacro:property name="wheel_radius" value="0.1625"/>   <!-- 325 mm çap -->
+  <xacro:property name="wheel_width"  value="0.09"/>
+
+  <!-- STL global scale -->
+  <xacro:property name="wheel_scale" value="0.01"/>
+
+  <!-- Gövdeden tekerlere uzaklık -->
+  <xacro:property name="wheel_offset_x" value="${body_length/2 - 0.10}"/>
+  <xacro:property name="wheel_offset_y" value="${body_width/2 + wheel_width/2}"/>
+
+  <!-- Kütleler -->
+  <xacro:property name="body_mass"  value="20.0"/>
+  <xacro:property name="wheel_mass" value="1.0"/>
+
+  <!-- Gövdenin yerden yüksekliği -->
+  <xacro:property name="body_z" value="${wheel_radius + body_height/2}"/>
+
+  <!-- STL yolları (SAĞ / SOL ayrıldı) -->
+  <xacro:property name="wheel_mesh_right"
+                  value="package://mecanum_robot_description/meshes/mecanum_wheel_right.stl"/>
+  <xacro:property name="wheel_mesh_left"
+                  value="package://mecanum_robot_description/meshes/mecanum_wheel_left.stl"/>
+
+  <!-- ====== GÖVDE: base_link ====== -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 ${body_z}" rpy="0 0 0"/>
+      <mass value="${body_mass}"/>
+      <inertia
+        ixx="${1.0/12.0 * body_mass * (body_height*body_height + body_width*body_width)}"
+        iyy="${1.0/12.0 * body_mass * (body_height*body_height + body_length*body_length)}"
+        izz="${1.0/12.0 * body_mass * (body_length*body_length + body_width*body_width)}"
+        ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+
+    <visual>
+      <origin xyz="0 0 ${body_z}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 1 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 ${body_z}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- ====== TEKER MACROSU ====== -->
+  <!-- mesh: hangi STL kullanılacak (sağ / sol) -->
+  <xacro:macro name="mecanum_wheel" params="name parent x y z mesh">
+    <link name="${name}">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="${wheel_mass}"/>
+        <inertia
+          ixx="${1.0/12.0*wheel_mass*(3*wheel_radius*wheel_radius + wheel_width*wheel_width)}"
+          iyy="${1.0/2.0*wheel_mass*wheel_radius*wheel_radius}"
+          izz="${1.0/12.0*wheel_mass*(3*wheel_radius*wheel_radius + wheel_width*wheel_width)}"
+          ixy="0" ixz="0" iyz="0"/>
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="${mesh}"
+                scale="${wheel_scale} ${wheel_scale} ${wheel_scale}"/>
+        </geometry>
+        <material name="black">
+          <color rgba="0.1 0.1 0.1 1"/>
+        </material>
+      </visual>
+
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="${mesh}"
+                scale="${wheel_scale} ${wheel_scale} ${wheel_scale}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${name}_joint" type="continuous">
+      <parent link="${parent}"/>
+      <child  link="${name}"/>
+      <origin xyz="${x} ${y} ${z}" rpy="0 0 0"/>
+      <!-- Hepsi için dönme ekseni Y -->
+      <axis xyz="0 1 0"/>
+      <limit effort="10" velocity="20"/>
+      <dynamics friction="0.0" damping="0.0"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- ====== 4 TEKER ====== -->
+  <!-- SOL tekerler  : wheel_mesh_left -->
+  <!-- SAĞ tekerler  : wheel_mesh_right -->
+
+  <!-- Ön Sol (x+, y+) -->
+  <xacro:mecanum_wheel
+    name="wheel_fl"
+    parent="base_link"
+    x="${ wheel_offset_x}"
+    y="${ wheel_offset_y}"
+    z="${wheel_radius}"
+    mesh="${wheel_mesh_left}"/>
+
+  <!-- Ön Sağ (x+, y-) -->
+  <xacro:mecanum_wheel
+    name="wheel_fr"
+    parent="base_link"
+    x="${ wheel_offset_x}"
+    y="-${wheel_offset_y}"
+    z="${wheel_radius}"
+    mesh="${wheel_mesh_right}"/>
+
+  <!-- Arka Sol (x-, y+) -->
+  <xacro:mecanum_wheel
+    name="wheel_rl"
+    parent="base_link"
+    x="-${wheel_offset_x}"
+    y="${ wheel_offset_y}"
+    z="${wheel_radius}"
+    mesh="${wheel_mesh_left}"/>
+
+  <!-- Arka Sağ (x-, y-) -->
+  <xacro:mecanum_wheel
+    name="wheel_rr"
+    parent="base_link"
+    x="-${wheel_offset_x}"
+    y="-${wheel_offset_y}"
+    z="${wheel_radius}"
+    mesh="${wheel_mesh_right}"/>
+
+</robot>
